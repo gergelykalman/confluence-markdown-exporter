@@ -75,7 +75,7 @@ class Exporter:
                 att_title = i["title"]
                 download = i["_links"]["download"]
 
-                att_url = self.__url + "wiki/" + download
+                att_url = self.__url.rstrip("/") + "/wiki/" + download
                 att_sanitized_name = self.__sanitize_filename(att_title)
                 att_filename = os.path.join(page_output_dir, ATTACHMENT_FOLDER_NAME, att_sanitized_name)
 
