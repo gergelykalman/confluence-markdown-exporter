@@ -151,10 +151,6 @@ class Converter:
             if not path.endswith(".html"):
                 continue
 
-            if not path.endswith("test.html"):
-                print("SKIPPING", path)
-                continue
-
             print("Converting {}".format(path))
             with open(path) as f:
                 data = f.read()
