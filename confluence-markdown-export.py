@@ -85,7 +85,10 @@ class Exporter:
                 print("Saving attachment {} to {}".format(att_title, page_location))
 
                 r = requests.get(att_url, auth=(self.__username, self.__token), stream=True)
-                r.raise_for_status()
+                try:
+                    r.raise_for_status()
+                except requests.exceptions.HTTPError as err:
+                    print(err)
                 with open(att_filename, "wb") as f:
                     for buf in r.iter_content():
                         f.write(buf)
