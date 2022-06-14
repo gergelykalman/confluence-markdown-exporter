@@ -1,5 +1,6 @@
 import os
 import argparse
+from urllib.parse import urlparse, urlunparse
 
 import requests
 import bs4
@@ -17,10 +18,12 @@ class ExportException(Exception):
 class Exporter:
     def __init__(self, url, username, token, out_dir, no_attach):
         self.__out_dir = out_dir
-        self.__url = url
+        self.__parsed_url = urlparse(url)
         self.__username = username
         self.__token = token
-        self.__confluence = Confluence(url=self.__url, username=self.__username, password=self.__token)
+        self.__confluence = Confluence(url=urlunparse(self.__parsed_url),
+                                       username=self.__username,
+                                       password=self.__token)
         self.__seen = set()
         self.__no_attach = no_attach
 
@@ -76,7 +79,9 @@ class Exporter:
                 att_title = i["title"]
                 download = i["_links"]["download"]
 
-                att_url = self.__url.rstrip("/") + "/wiki/" + download
+                att_url = urlunparse(
+                    (self.__parsed_url[0], self.__parsed_url[1], "/wiki/" + download.lstrip("/"), None, None, None)
+                )
                 att_sanitized_name = self.__sanitize_filename(att_title)
                 att_filename = os.path.join(page_output_dir, ATTACHMENT_FOLDER_NAME, att_sanitized_name)
 
