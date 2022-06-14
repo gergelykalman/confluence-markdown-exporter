@@ -57,8 +57,9 @@ class Exporter:
 
         # make some rudimentary checks, to prevent trivial errors
         sanitized_filename = self.__sanitize_filename(document_name)
+        sanitized_parents = list(map(self.__sanitize_filename, parents))
 
-        page_location = parents + [sanitized_filename]
+        page_location = sanitized_parents + [sanitized_filename]
         page_filename = os.path.join(self.__out_dir, *page_location)
 
         page_output_dir = os.path.dirname(page_filename)
@@ -94,7 +95,7 @@ class Exporter:
     
         # recurse to process child nodes
         for child_id in child_ids:
-            self.__dump_page(child_id, parents=parents + [page_title])
+            self.__dump_page(child_id, parents=sanitized_parents + [page_title])
     
     def dump(self):
         ret = self.__confluence.get_all_spaces(start=0, limit=500, expand='description.plain,homepage')
