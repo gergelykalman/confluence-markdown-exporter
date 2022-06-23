@@ -104,6 +104,8 @@ class Exporter:
     
     def dump(self):
         ret = self.__confluence.get_all_spaces(start=0, limit=500, expand='description.plain,homepage')
+        if ret['size'] == 0:
+            print("No spaces found in confluence. Please check credentials")
         for space in ret["results"]:
             space_key = space["key"]
             print("Processing space", space_key)
