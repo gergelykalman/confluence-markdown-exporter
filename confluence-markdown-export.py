@@ -17,7 +17,7 @@ class ExportException(Exception):
 
 
 class Exporter:
-    def __init__(self, url, username, token, out_dir, no_attach):
+    def __init__(self, url, username, token, out_dir, space, no_attach):
         self.__out_dir = out_dir
         self.__parsed_url = urlparse(url)
         self.__username = username
@@ -27,6 +27,7 @@ class Exporter:
                                        password=self.__token)
         self.__seen = set()
         self.__no_attach = no_attach
+        self.__space = space
 
     def __sanitize_filename(self, document_name_raw):
         document_name = document_name_raw
@@ -103,22 +104,27 @@ class Exporter:
         # recurse to process child nodes
         for child_id in child_ids:
             self.__dump_page(child_id, parents=sanitized_parents + [page_title])
+
+    def __dump_space(self, space):
+        space_key = space["key"]
+        print("Processing space", space_key)
+        if space.get("homepage") is None:
+            print("Skipping space: {}, no homepage found!".format(space_key))
+            print("In order for this tool to work there has to be a root page!")
+            raise ExportException("No homepage found")
+        else:
+            # homepage found, recurse from there
+            homepage_id = space["homepage"]["id"]
+            self.__dump_page(homepage_id, parents=[space_key])
+
     
     def dump(self):
         ret = self.__confluence.get_all_spaces(start=0, limit=500, expand='description.plain,homepage')
         if ret['size'] == 0:
             print("No spaces found in confluence. Please check credentials")
         for space in ret["results"]:
-            space_key = space["key"]
-            print("Processing space", space_key)
-            if space.get("homepage") is None:
-                print("Skipping space: {}, no homepage found!".format(space_key))
-                print("In order for this tool to work there has to be a root page!")
-                raise ExportException("No homepage found")
-            else:
-                # homepage found, recurse from there
-                homepage_id = space["homepage"]["id"]
-                self.__dump_page(homepage_id, parents=[space_key])
+            if self.__space is None or space["key"] == self.__space:
+                self.__dump_space(space)
 
 
 class Converter:
@@ -180,6 +186,7 @@ if __name__ == "__main__":
     parser.add_argument("username", type=str, help="The username")
     parser.add_argument("token", type=str, help="The access token to Confluence")
     parser.add_argument("out_dir", type=str, help="The directory to output the files to")
+    parser.add_argument("--space", type=str, required=False, default=None, help="Spaces to export")
     parser.add_argument("--skip-attachments", action="store_true", dest="no_attach", required=False,
                         default=False, help="Skip fetching attachments")
     parser.add_argument("--no-fetch", action="store_true", dest="no_fetch", required=False,
@@ -188,7 +195,7 @@ if __name__ == "__main__":
     
     if not args.no_fetch:
         dumper = Exporter(url=args.url, username=args.username, token=args.token, out_dir=args.out_dir,
-                          no_attach=args.no_attach)
+                          space=args.space, no_attach=args.no_attach)
         dumper.dump()
     
     converter = Converter(out_dir=args.out_dir)
