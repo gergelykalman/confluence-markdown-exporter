@@ -9,6 +9,7 @@ from atlassian import Confluence
 
 
 ATTACHMENT_FOLDER_NAME = "attachments"
+DOWNLOAD_CHUNK_SIZE = 4 * 1024 * 1024   # 4MB, since we're single threaded this is safe to raise much higher
 
 
 class ExportException(Exception):
@@ -92,8 +93,9 @@ class Exporter:
 
                 r = requests.get(att_url, auth=(self.__username, self.__token), stream=True)
                 r.raise_for_status()
+
                 with open(att_filename, "wb") as f:
-                    for buf in r.iter_content():
+                    for buf in r.iter_content(chunk_size=DOWNLOAD_CHUNK_SIZE):
                         f.write(buf)
 
         self.__seen.add(page_id)
