@@ -68,7 +68,7 @@ class Exporter:
         page_output_dir = os.path.dirname(page_filename)
         os.makedirs(page_output_dir, exist_ok=True)
         print("Saving to {}".format(" / ".join(page_location)))
-        with open(page_filename, "w") as f:
+        with open(page_filename, "w", encoding="utf-8") as f:
             f.write(content)
 
         # fetch attachments unless disabled
@@ -160,7 +160,7 @@ class Converter:
                 continue
 
             print("Converting {}".format(path))
-            with open(path) as f:
+            with open(path, "r", encoding="utf-8") as f:
                 data = f.read()
 
             soup_raw = bs4.BeautifulSoup(data, 'html.parser')
@@ -168,7 +168,7 @@ class Converter:
 
             md = MarkdownConverter().convert_soup(soup)
             newname = os.path.splitext(path)[0]
-            with open(newname + ".md", "w") as f:
+            with open(newname + ".md", "w", encoding="utf-8") as f:
                 f.write(md)
 
 
