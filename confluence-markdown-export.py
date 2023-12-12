@@ -56,12 +56,12 @@ class Exporter:
         # save all files as .html for now, we will convert them later
         extension = ".html"
         if len(child_ids) > 0:
-            document_name = "index" + extension
+            document_name = "index"
         else:
-            document_name = page_title + extension
+            document_name = page_title
 
         # make some rudimentary checks, to prevent trivial errors
-        sanitized_filename = self.__sanitize_filename(document_name)
+        sanitized_filename = self.__sanitize_filename(document_name) + extension
         sanitized_parents = list(map(self.__sanitize_filename, parents))
 
         page_location = sanitized_parents + [sanitized_filename]
@@ -92,6 +92,7 @@ class Exporter:
 
                 print("Saving attachment {} to {}".format(att_title, page_location))
 
+                print("Using url: {}".format(att_url))
                 r = requests.get(att_url, auth=(self.__username, self.__token), stream=True)
                 if 400 <= r.status_code:
                     if r.status_code == 404:
