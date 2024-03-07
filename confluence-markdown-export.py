@@ -94,7 +94,6 @@ class Exporter:
 
                 print("Saving attachment {} to {}".format(att_title, page_location))
 
-                print("Using url: {}".format(att_url))
                 r = requests.get(att_url, headers={"Authorization": f"Bearer {self.__token}"}, stream=True)
                 if 400 <= r.status_code:
                     if r.status_code == 404:
