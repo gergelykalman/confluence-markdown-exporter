@@ -124,12 +124,23 @@ class Exporter:
 
     
     def dump(self):
-        ret = self.__confluence.get_all_spaces(start=0, limit=500, expand='description.plain,homepage')
-        if ret['size'] == 0:
-            print("No spaces found in confluence. Please check credentials")
-        for space in ret["results"]:
-            if self.__space is None or space["key"] == self.__space:
-                self.__dump_space(space)
+        start = 0
+        limit = 50
+        
+        while True:
+            print ("start %s" % start)
+            ret = self.__confluence.get_all_spaces(start=start, limit=limit, expand='description.plain,homepage')
+            if ret['size'] <= 0:
+                break
+            for space in ret["results"]:
+                print ("processing space %s" % space["key"])
+                if self.__space is not None and space["key"] == self.__space:
+                    self.__dump_space(space)
+                    return
+                if self.__space is None:
+                    self.__dump_space(space)
+            start += limit
+
 
 
 class Converter:
