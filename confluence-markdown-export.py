@@ -46,7 +46,11 @@ class Exporter:
         page_id = page["id"]
     
         # see if there are any children
-        child_ids = self.__confluence.get_child_id_list(page_id)
+        child_ids = []
+        try:
+            child_ids = self.__confluence.get_child_id_list(page_id)
+        except Exception as _:
+            print ("Error getting child ids for page %s" % page_id)
     
         content = page["body"]["storage"]["value"]
 
