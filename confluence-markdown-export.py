@@ -17,14 +17,11 @@ class ExportException(Exception):
 
 
 class Exporter:
-    def __init__(self, url, username, token, out_dir, space, no_attach):
+    def __init__(self, url, token, out_dir, space, no_attach):
         self.__out_dir = out_dir
         self.__parsed_url = urlparse(url)
-        self.__username = username
         self.__token = token
-        self.__confluence = Confluence(url=urlunparse(self.__parsed_url),
-                                       username=self.__username,
-                                       password=self.__token)
+        self.__confluence = Confluence(url=urlunparse(self.__parsed_url), token=self.__token)
         self.__seen = set()
         self.__no_attach = no_attach
         self.__space = space
@@ -93,7 +90,7 @@ class Exporter:
                 print("Saving attachment {} to {}".format(att_title, page_location))
 
                 print("Using url: {}".format(att_url))
-                r = requests.get(att_url, auth=(self.__username, self.__token), stream=True)
+                r = requests.get(att_url, headers={"Authorization": f"Bearer {self.__token}"}, stream=True)
                 if 400 <= r.status_code:
                     if r.status_code == 404:
                         print("Attachment {} not found (404)!".format(att_url))
@@ -190,7 +187,6 @@ class Converter:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("url", type=str, help="The url to the confluence instance")
-    parser.add_argument("username", type=str, help="The username")
     parser.add_argument("token", type=str, help="The access token to Confluence")
     parser.add_argument("out_dir", type=str, help="The directory to output the files to")
     parser.add_argument("--space", type=str, required=False, default=None, help="Spaces to export")
@@ -201,7 +197,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if not args.no_fetch:
-        dumper = Exporter(url=args.url, username=args.username, token=args.token, out_dir=args.out_dir,
+        dumper = Exporter(url=args.url, token=args.token, out_dir=args.out_dir,
                           space=args.space, no_attach=args.no_attach)
         dumper.dump()
     
