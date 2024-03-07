@@ -78,8 +78,9 @@ class Exporter:
                 att_title = i["title"]
                 download = i["_links"]["download"]
 
+                prefix = self.__parsed_url.path
                 att_url = urlunparse(
-                    (self.__parsed_url[0], self.__parsed_url[1], "/wiki/" + download.lstrip("/"), None, None, None)
+                    (self.__parsed_url[0], self.__parsed_url[1], prefix + download.lstrip("/"), None, None, None)
                 )
                 att_sanitized_name = self.__sanitize_filename(att_title)
                 att_filename = os.path.join(page_output_dir, ATTACHMENT_FOLDER_NAME, att_sanitized_name)
