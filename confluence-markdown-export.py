@@ -28,7 +28,7 @@ class Exporter:
 
     def __sanitize_filename(self, document_name_raw):
         document_name = document_name_raw
-        for invalid in ["..", "/"]:
+        for invalid in ["..", "/", ">", "<", ":", "\"", "|", "?", "*", "\\"]:
             if invalid in document_name:
                 print("Dangerous page title: \"{}\", \"{}\" found, replacing it with \"_\"".format(
                     document_name,
