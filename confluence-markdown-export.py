@@ -17,21 +17,18 @@ class ExportException(Exception):
 
 
 class Exporter:
-    def __init__(self, url, username, token, out_dir, space, no_attach):
+    def __init__(self, url, token, out_dir, space, no_attach):
         self.__out_dir = out_dir
         self.__parsed_url = urlparse(url)
-        self.__username = username
         self.__token = token
-        self.__confluence = Confluence(url=urlunparse(self.__parsed_url),
-                                       username=self.__username,
-                                       password=self.__token)
+        self.__confluence = Confluence(url=urlunparse(self.__parsed_url), token=self.__token)
         self.__seen = set()
         self.__no_attach = no_attach
         self.__space = space
 
     def __sanitize_filename(self, document_name_raw):
         document_name = document_name_raw
-        for invalid in ["..", "/"]:
+        for invalid in ["..", "/", ">", "<", ":", "\"", "|", "?", "*", "\\"]:
             if invalid in document_name:
                 print("Dangerous page title: \"{}\", \"{}\" found, replacing it with \"_\"".format(
                     document_name,
@@ -49,7 +46,11 @@ class Exporter:
         page_id = page["id"]
     
         # see if there are any children
-        child_ids = self.__confluence.get_child_id_list(page_id)
+        child_ids = []
+        try:
+            child_ids = self.__confluence.get_child_id_list(page_id)
+        except Exception as _:
+            print ("Error getting child ids for page %s" % page_id)
     
         content = page["body"]["storage"]["value"]
 
@@ -81,8 +82,9 @@ class Exporter:
                 att_title = i["title"]
                 download = i["_links"]["download"]
 
+                prefix = self.__parsed_url.path
                 att_url = urlunparse(
-                    (self.__parsed_url[0], self.__parsed_url[1], "/wiki/" + download.lstrip("/"), None, None, None)
+                    (self.__parsed_url[0], self.__parsed_url[1], prefix + download.lstrip("/"), None, None, None)
                 )
                 att_sanitized_name = self.__sanitize_filename(att_title)
                 att_filename = os.path.join(page_output_dir, ATTACHMENT_FOLDER_NAME, att_sanitized_name)
@@ -92,8 +94,7 @@ class Exporter:
 
                 print("Saving attachment {} to {}".format(att_title, page_location))
 
-                print("Using url: {}".format(att_url))
-                r = requests.get(att_url, auth=(self.__username, self.__token), stream=True)
+                r = requests.get(att_url, headers={"Authorization": f"Bearer {self.__token}"}, stream=True)
                 if 400 <= r.status_code:
                     if r.status_code == 404:
                         print("Attachment {} not found (404)!".format(att_url))
@@ -126,12 +127,23 @@ class Exporter:
 
     
     def dump(self):
-        ret = self.__confluence.get_all_spaces(start=0, limit=500, expand='description.plain,homepage')
-        if ret['size'] == 0:
-            print("No spaces found in confluence. Please check credentials")
-        for space in ret["results"]:
-            if self.__space is None or space["key"] == self.__space:
-                self.__dump_space(space)
+        start = 0
+        limit = 50
+        
+        while True:
+            print ("start %s" % start)
+            ret = self.__confluence.get_all_spaces(start=start, limit=limit, expand='description.plain,homepage')
+            if ret['size'] <= 0:
+                break
+            for space in ret["results"]:
+                print ("processing space %s" % space["key"])
+                if self.__space is not None and space["key"] == self.__space:
+                    self.__dump_space(space)
+                    return
+                if self.__space is None:
+                    self.__dump_space(space)
+            start += limit
+
 
 
 class Converter:
@@ -190,7 +202,6 @@ class Converter:
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("url", type=str, help="The url to the confluence instance")
-    parser.add_argument("username", type=str, help="The username")
     parser.add_argument("token", type=str, help="The access token to Confluence")
     parser.add_argument("out_dir", type=str, help="The directory to output the files to")
     parser.add_argument("--space", type=str, required=False, default=None, help="Spaces to export")
@@ -201,7 +212,7 @@ if __name__ == "__main__":
     args = parser.parse_args()
     
     if not args.no_fetch:
-        dumper = Exporter(url=args.url, username=args.username, token=args.token, out_dir=args.out_dir,
+        dumper = Exporter(url=args.url, token=args.token, out_dir=args.out_dir,
                           space=args.space, no_attach=args.no_attach)
         dumper.dump()
     
