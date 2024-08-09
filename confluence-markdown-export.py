@@ -29,14 +29,19 @@ class Exporter:
         self.__no_attach = no_attach
         self.__space = space
 
-    def __sanitize_filename(self, document_name_raw):
+    def __sanitize_filename(self, document_name_raw, max_length=200):
         document_name = document_name_raw
-        for invalid in ["..", "/"]:
+        for invalid in ["..", "/", "\\", ":", "*", "?", '"', "<", ">", "|"]:
             if invalid in document_name:
-                print("Dangerous page title: \"{}\", \"{}\" found, replacing it with \"_\"".format(
-                    document_name,
-                    invalid))
+                print(f"Invalid character '{invalid}' found in '{document_name}', replacing it with '_'")
                 document_name = document_name.replace(invalid, "_")
+        
+        # Truncate the filename if it's too long
+        if len(document_name) > max_length:
+            name, ext = os.path.splitext(document_name)
+            truncated_name = name[:max_length - len(ext) - 3] + "..."
+            document_name = truncated_name + ext
+        
         return document_name
 
     def __dump_page(self, src_id, parents):
@@ -62,7 +67,7 @@ class Exporter:
 
         # make some rudimentary checks, to prevent trivial errors
         sanitized_filename = self.__sanitize_filename(document_name) + extension
-        sanitized_parents = list(map(self.__sanitize_filename, parents))
+        sanitized_parents = [self.__sanitize_filename(parent) for parent in parents]
 
         page_location = sanitized_parents + [sanitized_filename]
         page_filename = os.path.join(self.__out_dir, *page_location)
@@ -86,7 +91,6 @@ class Exporter:
                 )
                 att_sanitized_name = self.__sanitize_filename(att_title)
                 att_filename = os.path.join(page_output_dir, ATTACHMENT_FOLDER_NAME, att_sanitized_name)
-
                 att_dirname = os.path.dirname(att_filename)
                 os.makedirs(att_dirname, exist_ok=True)
 
@@ -124,7 +128,7 @@ class Exporter:
             homepage_id = space["homepage"]["id"]
             self.__dump_page(homepage_id, parents=[space_key])
 
-    
+
     def dump(self):
         ret = self.__confluence.get_all_spaces(start=0, limit=500, expand='description.plain,homepage')
         if ret['size'] == 0:
