@@ -56,7 +56,7 @@ class Exporter:
         # save all files as .html for now, we will convert them later
         extension = ".html"
         if len(child_ids) > 0:
-            document_name = "index"
+            document_name = "index_" + page_title
         else:
             document_name = page_title
 
